@@ -99,9 +99,9 @@
         <!-- ==================== 底层场景与 AI 视频层（微信强兼容三图层版） ==================== -->
         <canvas id="scene-canvas" class="absolute inset-0 w-full h-full z-0"></canvas>
         <div id="video-layer" class="absolute inset-0 w-full h-full z-10 pointer-events-none bg-[#140f0b]">
-            <video id="v1-video" class="absolute inset-0 w-full h-full object-cover transition-opacity duration-300 opacity-0" playsinline webkit-playsinline x5-playsinline="true" x5-video-player-type="h5" x5-video-player-fullscreen="false" preload="auto" crossorigin="anonymous" loop></video>
-            <video id="v2-video" class="absolute inset-0 w-full h-full object-cover transition-opacity duration-300 opacity-0" playsinline webkit-playsinline x5-playsinline="true" x5-video-player-type="h5" x5-video-player-fullscreen="false" preload="auto" crossorigin="anonymous" loop></video>
-            <video id="v3-video" class="absolute inset-0 w-full h-full object-cover transition-opacity duration-300 opacity-0" playsinline webkit-playsinline x5-playsinline="true" x5-video-player-type="h5" x5-video-player-fullscreen="false" preload="auto" crossorigin="anonymous"></video>
+            <video id="v1-video" class="absolute inset-0 w-full h-full object-cover transition-opacity duration-300 opacity-0" playsinline webkit-playsinline x5-playsinline="true" x5-video-player-type="h5" x5-video-player-fullscreen="false" preload="auto" loop></video>
+            <video id="v2-video" class="absolute inset-0 w-full h-full object-cover transition-opacity duration-300 opacity-0" playsinline webkit-playsinline x5-playsinline="true" x5-video-player-type="h5" x5-video-player-fullscreen="false" preload="auto" loop></video>
+            <video id="v3-video" class="absolute inset-0 w-full h-full object-cover transition-opacity duration-300 opacity-0" playsinline webkit-playsinline x5-playsinline="true" x5-video-player-type="h5" x5-video-player-fullscreen="false" preload="auto"></video>
         </div>
 
         <!-- ==================== 状态二半透明白幕层（推迟至 v2 播放3秒后开启） ==================== -->
@@ -422,16 +422,23 @@
                 enterBtn.addEventListener('click', () => {
                     document.getElementById('loading-screen').classList.add('opacity-0', 'pointer-events-none');
                     
-                    // 微信终极绝招：瞬间播放并暂停所有视频，确立用户主动操作的上下文，并且取消静音
-                    Object.values(preloadedVideos).forEach(vid => {
-                        vid.muted = false;
-                        let playPromise = vid.play();
-                        if (playPromise !== undefined) {
-                            playPromise.then(() => { vid.pause(); }).catch(()=>{});
-                        }
+                    // 解除静音
+                    preloadedVideos.state1.muted = false;
+                    preloadedVideos.state2.muted = false;
+                    preloadedVideos.state3.muted = false;
+
+                    // 微信强制循环补丁：防止微信无视 loop 属性
+                    preloadedVideos.state1.addEventListener('ended', function() {
+                        this.currentTime = 0;
+                        this.play().catch(()=>{});
                     });
-                    
-                    setTimeout(playVideoForCurrentPhase, 150);
+                    preloadedVideos.state2.addEventListener('ended', function() {
+                        this.currentTime = 0;
+                        this.play().catch(()=>{});
+                    });
+
+                    // 同步直接调用播放，绝对不能加 setTimeout 延迟，否则会丢失用户点击授权
+                    playVideoForCurrentPhase();
                 }, { once: true });
 
                 // 微信专有：尝试监听 WeixinJSBridgeReady 提前准备
@@ -546,8 +553,8 @@
         function spawnFallingCharm() {
             if (state.phase !== 'STATE_2_PLAY') return;
             const trigram = TRIGRAM_LIST[Math.floor(Math.random() * TRIGRAM_LIST.length)];
-            // 心机躲闪概率 83%
-            const isSneaky = Math.random() < 0.83;
+            // 心机躲闪概率 75%
+            const isSneaky = Math.random() < 0.75;
 
             state.charms.push({
                 x: (0.18 + Math.random() * 0.64) * state.width,

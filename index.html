@@ -96,9 +96,13 @@
             </div>
         </div>
 
-        <!-- ==================== 底层场景与 AI 视频层（加入全面兼容的播放属性） ==================== -->
+        <!-- ==================== 底层场景与 AI 视频层（微信强兼容三图层版） ==================== -->
         <canvas id="scene-canvas" class="absolute inset-0 w-full h-full z-0"></canvas>
-        <video id="bg-video" class="absolute inset-0 w-full h-full object-cover z-10 hidden" playsinline webkit-playsinline x5-playsinline="true" x5-video-player-type="h5"></video>
+        <div id="video-layer" class="absolute inset-0 w-full h-full z-10 pointer-events-none bg-[#140f0b]">
+            <video id="v1-video" class="absolute inset-0 w-full h-full object-cover" style="display: none;" playsinline webkit-playsinline x5-playsinline="true" x5-video-player-type="h5" x5-video-player-fullscreen="false" preload="auto" loop></video>
+            <video id="v2-video" class="absolute inset-0 w-full h-full object-cover" style="display: none;" playsinline webkit-playsinline x5-playsinline="true" x5-video-player-type="h5" x5-video-player-fullscreen="false" preload="auto" loop></video>
+            <video id="v3-video" class="absolute inset-0 w-full h-full object-cover" style="display: none;" playsinline webkit-playsinline x5-playsinline="true" x5-video-player-type="h5" x5-video-player-fullscreen="false" preload="auto"></video>
+        </div>
 
         <!-- ==================== 状态二半透明白幕层（推迟至 v2 播放3秒后开启） ==================== -->
         <div id="white-veil" class="absolute inset-0 z-20 bg-white/60 backdrop-blur-[1.5px] opacity-0 pointer-events-none transition-opacity duration-500"></div>
@@ -201,71 +205,29 @@
         };
 
         const videoSources = {
-            state1: "",
-            state2: "",
-            state3: "",
             loaded: false
         };
 
+        // 获取三个实际的DOM视频元素
         const preloadedVideos = {
-            state1: document.createElement('video'),
-            state2: document.createElement('video'),
-            state3: document.createElement('video')
+            state1: document.getElementById('v1-video'),
+            state2: document.getElementById('v2-video'),
+            state3: document.getElementById('v3-video')
         };
 
-        // 预加载签筒图片用于画布绘制，换用 raw 直连无缓存路径
+        // 预加载签筒图片用于画布绘制
         const qiantongImg = new Image();
         qiantongImg.src = "https://raw.githubusercontent.com/yazhouliu1018/Shulaigua/main/qiantong.png";
 
         const EDUHK_ORACLES = [
-            {
-                tag: "上上签 · 准教师解忧卦",
-                title: "【放下教案 · 安眠卦】",
-                content: "放下助人情结，尊重他人命运。今晚 Lesson Plan 改不完乃天意使然，不如合上电脑睡个好觉，明早起来灵感自来！",
-                advice: "💡 今日宜：早睡养发 / 忌：深夜改稿"
-            },
-            {
-                tag: "大吉 · 社交免死金牌卦",
-                title: "【群聊隐身 · 清净卦】",
-                content: "Group Project 地球离了你照样转。今日宜开启勿扰模式，忌秒回微信。无效社交不如回宿舍煮碗热腾腾的公仔面！",
-                advice: "💡 今日宜：装死独处 / 忌：硬融饭局"
-            },
-            {
-                tag: "上上签 · 干饭人果断卦",
-                title: "【离火温饱 · 麦门卦】",
-                content: "站在教大 Canteen 指示牌前犹豫三刻，饭菜皆凉。遇事不决，麦当劳解决！立刻去点一份脆香鸡翼犒劳自己。",
-                advice: "💡 今日宜：大快朵颐 / 忌：空腹纠结"
-            },
-            {
-                tag: "上吉 · 续命回血卦",
-                title: "【甘露入喉 · 少冰卦】",
-                content: "老夫夜观天象，算定你今日五行缺糖、命里缺歇。速去买一杯三分糖冻柠茶或奶茶，烦恼随冰块一饮而空！",
-                advice: "💡 今日宜：喝奶茶摸鱼 / 忌：眉头紧锁"
-            },
-            {
-                tag: "中吉 · 交通无阻卦",
-                title: "【校巴随缘 · 慢行卦】",
-                content: "无论等74K小巴还是学校穿梭巴士，总是排起长龙？别急，漫步大埔山道亦是风景，放慢脚步，好运自然跟上。",
-                advice: "💡 今日宜：听歌散步 / 忌：疯狂赶路"
-            },
-            {
-                tag: "上上签 · 考神附体卦",
-                title: "【蒙图占座 · 丝滑卦】",
-                content: "今日吉星高照，蒙民伟图书馆必有你的专属C位。Groupmate个个大腿，所有Due都能丝滑提交，顺利Pass！",
-                advice: "💡 今日宜：果断Submit / 忌：反复纠结"
-            },
-            {
-                tag: "大吉 · 桃花人际卦",
-                title: "【广场邂逅 · 随缘卦】",
-                content: "缘分不可强求，但可偶遇。今日在天幕广场多逗留片刻，或者去Canteen拼个桌，说不定就能邂逅有趣的灵魂。",
-                advice: "💡 今日宜：抬头微笑 / 忌：只盯手机"
-            },
-            {
-                tag: "中平 · 强健体魄卦",
-                title: "【甩掉内耗 · 爆汗卦】",
-                content: "在电脑前坐了一天腰酸背痛？立刻去教大体育馆挥洒汗水，把所有的内耗和烦恼都随着卡路里燃烧掉吧！",
-                advice: "💡 今日宜：去Gym房 / 忌：久坐不动"
-            }
+            { tag: "上上签 · 准教师解忧卦", title: "【放下教案 · 安眠卦】", content: "放下助人情结，尊重他人命运。今晚 Lesson Plan 改不完乃天意使然，不如合上电脑睡个好觉，明早起来灵感自来！", advice: "💡 今日宜：早睡养发 / 忌：深夜改稿" },
+            { tag: "大吉 · 社交免死金牌卦", title: "【群聊隐身 · 清净卦】", content: "Group Project 地球离了你照样转。今日宜开启勿扰模式，忌秒回微信。无效社交不如回宿舍煮碗热腾腾的公仔面！", advice: "💡 今日宜：装死独处 / 忌：硬融饭局" },
+            { tag: "上上签 · 干饭人果断卦", title: "【离火温饱 · 麦门卦】", content: "站在教大 Canteen 指示牌前犹豫三刻，饭菜皆凉。遇事不决，麦当劳解决！立刻去点一份脆香鸡翼犒劳自己。", advice: "💡 今日宜：大快朵颐 / 忌：空腹纠结" },
+            { tag: "上吉 · 续命回血卦", title: "【甘露入喉 · 少冰卦】", content: "老夫夜观天象，算定你今日五行缺糖、命里缺歇。速去买一杯三分糖冻柠茶或奶茶，烦恼随冰块一饮而空！", advice: "💡 今日宜：喝奶茶摸鱼 / 忌：眉头紧锁" },
+            { tag: "中吉 · 交通无阻卦", title: "【校巴随缘 · 慢行卦】", content: "无论等74K小巴还是学校穿梭巴士，总是排起长龙？别急，漫步大埔山道亦是风景，放慢脚步，好运自然跟上。", advice: "💡 今日宜：听歌散步 / 忌：疯狂赶路" },
+            { tag: "上上签 · 考神附体卦", title: "【蒙图占座 · 丝滑卦】", content: "今日吉星高照，蒙民伟图书馆必有你的专属C位。Groupmate个个大腿，所有Due都能丝滑提交，顺利Pass！", advice: "💡 今日宜：果断Submit / 忌：反复纠结" },
+            { tag: "大吉 · 桃花人际卦", title: "【广场邂逅 · 随缘卦】", content: "缘分不可强求，但可偶遇。今日在天幕广场多逗留片刻，或者去Canteen拼个桌，说不定就能邂逅有趣的灵魂。", advice: "💡 今日宜：抬头微笑 / 忌：只盯手机" },
+            { tag: "中平 · 强健体魄卦", title: "【甩掉内耗 · 爆汗卦】", content: "在电脑前坐了一天腰酸背痛？立刻去教大体育馆挥洒汗水，把所有的内耗和烦恼都随着卡路里燃烧掉吧！", advice: "💡 今日宜：去Gym房 / 忌：久坐不动" }
         ];
 
         const state = {
@@ -284,7 +246,6 @@
         const sceneCtx = sceneCanvas.getContext('2d');
         const gameCanvas = document.getElementById('game-canvas');
         const gameCtx = gameCanvas.getContext('2d');
-        const bgVideo = document.getElementById('bg-video');
         const whiteVeil = document.getElementById('white-veil');
         const deskCanisterBtn = document.getElementById('desk-canister-btn');
         const hudCounter = document.getElementById('hud-counter');
@@ -392,10 +353,8 @@
                     }
                     const testUrl = candidates[attemptIdx++];
                     const vid = preloadedVideos[slotKey];
-                    vid.preload = "auto";
-                    vid.muted = true;
-                    vid.playsInline = true;
-
+                    vid.muted = true; // 预加载时强制静音
+                    
                     let settled = false;
                     const timeoutId = setTimeout(() => {
                         if (settled) return;
@@ -408,7 +367,6 @@
                         if (settled) return;
                         settled = true;
                         cleanup();
-                        videoSources[slotKey] = testUrl;
                         resolve({ slotKey, ok: true, url: testUrl });
                     }
 
@@ -438,7 +396,6 @@
 
         async function preloadAllThreeVideos(name1, name2, name3) {
             const barFill = document.getElementById('loading-bar-fill');
-
             barFill.style.width = '15%';
 
             let finishedCount = 0;
@@ -448,20 +405,15 @@
                 barFill.style.width = `${pct}%`;
             };
 
-            const tasks = [
+            await Promise.all([
                 preloadSingleVideoSlot('state1', name1).then(r => { updateProgress(); return r; }),
                 preloadSingleVideoSlot('state2', name2).then(r => { updateProgress(); return r; }),
                 preloadSingleVideoSlot('state3', name3).then(r => { updateProgress(); return r; })
-            ];
+            ]);
 
-            await Promise.all(tasks);
-
-            const fallbackUrl = videoSources.state1 || videoSources.state2 || videoSources.state3;
-            if (!videoSources.state1) videoSources.state1 = fallbackUrl;
-            if (!videoSources.state2) videoSources.state2 = fallbackUrl;
-            if (!videoSources.state3) videoSources.state3 = fallbackUrl;
             videoSources.loaded = true;
 
+            // ！！！核心微信适配：在第一次点击时，强制所有视频预播放，解锁音频权限 ！！！
             setTimeout(() => {
                 document.getElementById('loading-progress-container').classList.add('hidden');
                 const enterBtn = document.getElementById('enter-game-btn');
@@ -469,33 +421,69 @@
                 
                 enterBtn.addEventListener('click', () => {
                     document.getElementById('loading-screen').classList.add('opacity-0', 'pointer-events-none');
+                    
+                    // 解除静音
+                    preloadedVideos.state1.muted = false;
+                    preloadedVideos.state2.muted = false;
+                    preloadedVideos.state3.muted = false;
+
+                    // 骗取全部视频的播放权限（一次性全部唤醒，然后关掉不需要的）
+                    let p1 = preloadedVideos.state1.play();
+                    let p2 = preloadedVideos.state2.play();
+                    let p3 = preloadedVideos.state3.play();
+
+                    if (p1 !== undefined) p1.catch(() => {});
+                    if (p2 !== undefined) p2.then(() => preloadedVideos.state2.pause()).catch(() => {});
+                    if (p3 !== undefined) p3.then(() => preloadedVideos.state3.pause()).catch(() => {});
+
+                    // 微信强制循环补丁：防止微信无视 loop 属性
+                    preloadedVideos.state1.addEventListener('ended', function() {
+                        this.currentTime = 0;
+                        this.play().catch(()=>{});
+                    });
+                    preloadedVideos.state2.addEventListener('ended', function() {
+                        this.currentTime = 0;
+                        this.play().catch(()=>{});
+                    });
+
+                    // 同步直接调用播放
                     playVideoForCurrentPhase();
                 }, { once: true });
+
+                // 微信专有：尝试监听 WeixinJSBridgeReady 提前准备
+                document.addEventListener("WeixinJSBridgeReady", function () {
+                    Object.values(preloadedVideos).forEach(vid => vid.load());
+                }, false);
+
             }, 400);
         }
 
-        bgVideo.addEventListener('ended', () => {
-            if (state.phase === 'STATE_1' || state.phase === 'STATE_2_THROW' || state.phase === 'STATE_2_PLAY') {
-                bgVideo.currentTime = 0;
-                bgVideo.play().catch(() => {});
-            }
-        });
-
         function playVideoForCurrentPhase() {
-            if (!videoSources.loaded || !videoSources.state1) return;
-            bgVideo.classList.remove('hidden');
+            if (!videoSources.loaded) return;
+
+            const v1 = preloadedVideos.state1;
+            const v2 = preloadedVideos.state2;
+            const v3 = preloadedVideos.state3;
+
+            // 彻底弃用 opacity 渐变，直接使用最安全的 display 属性强行切换，避开微信渲染卡死 BUG
+            v1.style.display = 'none';
+            v2.style.display = 'none';
+            v3.style.display = 'none';
 
             if (state.phase === 'STATE_1') {
-                if (bgVideo.src !== videoSources.state1) bgVideo.src = videoSources.state1;
-                bgVideo.play().catch(() => {});
+                v1.style.display = 'block';
+                v2.pause(); v3.pause();
+                v1.play().catch(() => {});
             } else if (state.phase === 'STATE_2_THROW' || state.phase === 'STATE_2_PLAY') {
-                const targetUrl = videoSources.state2 || videoSources.state1;
-                if (bgVideo.src !== targetUrl) bgVideo.src = targetUrl;
-                bgVideo.play().catch(() => {});
+                v2.style.display = 'block';
+                v1.pause(); v3.pause();
+                if (state.phase === 'STATE_2_THROW') v2.currentTime = 0; // 从头播放看戏
+                v2.play().catch(() => {});
             } else if (state.phase === 'STATE_3') {
-                const targetUrl = videoSources.state3 || videoSources.state1;
-                if (bgVideo.src !== targetUrl) bgVideo.src = targetUrl;
-                bgVideo.play().catch(() => {});
+                v3.style.display = 'block';
+                v1.pause(); v2.pause();
+                v3.currentTime = 0;
+                v3.play().catch(() => {});
             }
         }
 
@@ -521,6 +509,13 @@
 
         deskCanisterBtn.addEventListener('click', async () => {
             if (state.phase !== 'STATE_1') return;
+            
+            // 重要修复：在异步 await 之前立刻切换视频状态，保住微信对“用户点击”的合法判定！
+            state.phase = 'STATE_2_THROW';
+            deskCanisterBtn.classList.remove('canister-idle-anim');
+            deskCanisterBtn.classList.add('canister-throw-anim');
+            ratDialogue.innerHTML = '🐭 <strong>鼠摊主</strong>：“看招！签筒飞上天咯——左右倾斜手机（或滑动屏幕）去接灵符吧！”';
+            playVideoForCurrentPhase();
             sfx.playThrowCanister();
 
             if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
@@ -532,12 +527,7 @@
                 } catch (e) {}
             }
 
-            state.phase = 'STATE_2_THROW';
-            deskCanisterBtn.classList.remove('canister-idle-anim');
-            deskCanisterBtn.classList.add('canister-throw-anim');
-            ratDialogue.innerHTML = '🐭 <strong>鼠摊主</strong>：“看招！签筒飞上天咯——左右倾斜手机（或滑动屏幕）去接灵符吧！”';
-            playVideoForCurrentPhase();
-
+            // 锁死时间轴：整整 3 秒后，白幕、引导和第一个卦符才开始出现
             setTimeout(() => {
                 if (state.phase !== 'STATE_2_THROW') return;
                 deskCanisterBtn.classList.add('hidden');
@@ -577,8 +567,8 @@
         function spawnFallingCharm() {
             if (state.phase !== 'STATE_2_PLAY') return;
             const trigram = TRIGRAM_LIST[Math.floor(Math.random() * TRIGRAM_LIST.length)];
-            // Evasion probability adjusted to 60%
-            const isSneaky = Math.random() < 0.60;
+            // 心机躲闪概率 75%
+            const isSneaky = Math.random() < 0.75;
 
             state.charms.push({
                 x: (0.18 + Math.random() * 0.64) * state.width,
@@ -594,7 +584,7 @@
         }
 
         function addFloatingToast(x, y, text, color = '#8c2318') {
-            state.toasts.push({ x, y, text, color, alpha: 1, dy: -1.4 });
+            state.toasts.push({ x, y, text, color, alpha: 1, dy: -1.0 });
         }
 
         function enterState3() {
@@ -608,12 +598,14 @@
 
             playVideoForCurrentPhase();
 
-            bgVideo.onended = () => {
+            // 监听视频3播放结束
+            preloadedVideos.state3.onended = () => {
                 if (state.phase === 'STATE_3' && document.getElementById('scroll-modal').classList.contains('opacity-0')) {
                     openScrollModal();
                 }
             };
 
+            // 保底机制：10秒后强制展示卷轴（防止视频卡顿导致不触发onended）
             setTimeout(() => {
                 if (state.phase === 'STATE_3' && document.getElementById('scroll-modal').classList.contains('opacity-0')) {
                     openScrollModal();
@@ -673,7 +665,7 @@
         });
 
         function drawEdUHKSceneFallback(ctx, w, h, now) {
-            if (videoSources.loaded && !bgVideo.classList.contains('hidden') && bgVideo.readyState >= 2) {
+            if (videoSources.loaded && preloadedVideos.state1.readyState >= 2) {
                 return;
             }
             const skyGrad = ctx.createLinearGradient(0, 0, 0, h * 0.65);
@@ -711,6 +703,7 @@
 
                     const distYFromTop = playerCanisterY - c.y;
 
+                    // 心机躲闪逻辑判定
                     if (c.isSneaky && !c.hasDodged && distYFromTop > 30 && distYFromTop < 140 && Math.abs(dx) < 65) {
                         c.hasDodged = true;
                         sfx.playSneakyDodge();
@@ -723,6 +716,7 @@
                         addFloatingToast(c.x, c.y - 20, randomText, "#9e2a2b");
                     }
 
+                    // 缩小判定范围到 32，需要接得更准
                     if (dist < 32) {
                         sfx.playCatchCharm();
                         state.charms.splice(i, 1);
@@ -751,17 +745,18 @@
                     ctx.strokeStyle = '#5c381a';
                     ctx.lineWidth = 2;
                     ctx.beginPath();
-                    ctx.roundRect(-20, -33, 40, 66, 4);
+                    // 灵符缩小
+                    ctx.roundRect(-16, -26, 32, 52, 4);
                     ctx.fill();
                     ctx.stroke();
 
                     ctx.fillStyle = '#8c2318';
-                    ctx.font = 'bold 16px "Noto Serif SC", serif';
+                    ctx.font = 'bold 14px "Noto Serif SC", serif';
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
-                    ctx.fillText(c.trigram.name, 0, -8);
-                    ctx.font = '10px sans-serif';
-                    ctx.fillText(c.trigram.symbol, 0, 12);
+                    ctx.fillText(c.trigram.name, 0, -6);
+                    ctx.font = '9px sans-serif';
+                    ctx.fillText(c.trigram.symbol, 0, 10);
 
                     ctx.restore();
                 }
@@ -770,7 +765,8 @@
             for (let i = state.toasts.length - 1; i >= 0; i--) {
                 const t = state.toasts[i];
                 t.y += t.dy;
-                t.alpha -= 0.008;
+                // 减慢文字透明度消失的速度
+                t.alpha -= 0.006;
                 if (t.alpha <= 0) {
                     state.toasts.splice(i, 1);
                     continue;

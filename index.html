@@ -49,13 +49,6 @@
             animation: canisterThrowUp 1.05s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
         }
 
-        /* 宣纸古风质感 */
-        .scroll-paper {
-            background: linear-gradient(180deg, #f5ead4 0%, #ead6b3 50%, #dfbe8f 100%);
-            border: 4px solid #5c3718;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7), inset 0 0 35px rgba(120, 72, 28, 0.28);
-        }
-
         /* 旋转太极八卦铜盘 */
         @keyframes taijiSpin {
             0% { transform: rotate(0deg); }
@@ -82,7 +75,7 @@
     <!-- 竖屏 9:16 手机端容器 -->
     <div id="app-stage" class="relative w-full h-full max-w-[460px] max-h-[920px] sm:h-[92vh] sm:rounded-[34px] sm:border-[6px] sm:border-[#3d2514] overflow-hidden bg-[#1e1510] shadow-2xl">
 
-        <!-- ==================== 精简版预加载层（自动进入） ==================== -->
+        <!-- ==================== 精简版预加载层 ==================== -->
         <div id="loading-screen" class="absolute inset-0 z-[60] bg-[#1b1109] flex flex-col items-center justify-center p-7 text-center transition-opacity duration-700">
             <div class="flex flex-col items-center w-full max-w-[280px]">
                 <div class="w-24 h-24 rounded-full border-4 border-[#c89d54] bg-[#3b2210] flex items-center justify-center shadow-2xl mb-6 taiji-spin">
@@ -91,16 +84,21 @@
 
                 <h2 class="text-4xl font-calligraphy text-[#f7e2b8] tracking-widest mb-8">鼠来卦</h2>
 
-                <!-- 精简进度条 -->
-                <div class="w-full h-3 bg-[#362010] rounded-full border border-[#8f6334] overflow-hidden p-0.5">
+                <!-- 精简进度条容器 -->
+                <div id="loading-progress-container" class="w-full h-3 bg-[#362010] rounded-full border border-[#8f6334] overflow-hidden p-0.5">
                     <div id="loading-bar-fill" class="h-full bg-gradient-to-r from-[#8c2318] via-[#d49b43] to-[#f5d380] rounded-full transition-all duration-300" style="width: 10%;"></div>
                 </div>
+
+                <!-- 手机端必须的交互解锁按钮（初始隐藏，加载完显示） -->
+                <button id="enter-game-btn" class="hidden mt-2 px-8 py-2.5 rounded-full bg-[#8c2318] border-2 border-[#d4a656] text-[#f7e2b8] font-bold tracking-widest shadow-[0_0_15px_rgba(212,166,86,0.4)] animate-pulse">
+                    点击入局
+                </button>
             </div>
         </div>
 
-        <!-- ==================== 底层场景与 AI 视频层 ==================== -->
+        <!-- ==================== 底层场景与 AI 视频层（加入全面兼容的播放属性） ==================== -->
         <canvas id="scene-canvas" class="absolute inset-0 w-full h-full z-0"></canvas>
-        <video id="bg-video" class="absolute inset-0 w-full h-full object-cover z-10 hidden" playsinline webkit-playsinline crossorigin="anonymous"></video>
+        <video id="bg-video" class="absolute inset-0 w-full h-full object-cover z-10 hidden" playsinline webkit-playsinline x5-playsinline="true" x5-video-player-type="h5" crossorigin="anonymous"></video>
 
         <!-- ==================== 状态二半透明白幕层（推迟至 v2 播放3秒后开启） ==================== -->
         <div id="white-veil" class="absolute inset-0 z-20 bg-white/60 backdrop-blur-[1.5px] opacity-0 pointer-events-none transition-opacity duration-500"></div>
@@ -118,7 +116,6 @@
 
         <!-- ==================== UI 与交互控件层 ==================== -->
         <div class="absolute inset-0 z-40 pointer-events-none flex flex-col justify-between p-3.5">
-
             <!-- 顶部栏 -->
             <div class="flex items-start justify-between gap-2">
                 <div class="bg-[#3b2210]/90 border border-[#c89d54] rounded-2xl px-3.5 py-2 shadow-lg pointer-events-auto">
@@ -138,7 +135,7 @@
 
             <!-- 中下区域：状态一下移的签筒 -->
             <div class="relative w-full h-full pointer-events-none">
-                <!-- 【状态一专属】深棕桌案中央摇晃的聚灵竹签筒（下移到 4% 左右） -->
+                <!-- 【状态一专属】深棕桌案中央摇晃的聚灵竹签筒 -->
                 <div id="desk-canister-btn" class="pointer-events-auto cursor-pointer canister-idle-anim absolute left-1/2 bottom-[4%] flex flex-col items-center group">
                     <div class="relative w-28 h-36 flex items-center justify-center filter drop-shadow-[0_12px_18px_rgba(0,0,0,0.55)] group-active:scale-95 transition-transform">
                         <img src="https://raw.githubusercontent.com/yazhouliu1018/Shulaigua/main/qiantong.png" class="w-full h-full object-contain" alt="签筒" onerror="this.src='https://cdn.jsdelivr.net/gh/yazhouliu1018/Shulaigua@main/qiantong.png'">
@@ -164,9 +161,7 @@
         <div id="scroll-modal" class="pointer-events-none opacity-0 absolute inset-0 z-50 bg-black/70 backdrop-blur-sm flex flex-col items-center justify-center p-5 transition-opacity duration-300">
             <div class="w-full max-w-[380px] flex flex-col items-center">
                 
-                <!-- 使用 juanzhou.png 作为全尺寸背景图片，左右内边距调宽至 100px 以收拢文字 -->
-                <div class="w-full relative flex flex-col items-center text-[#381f0e] drop-shadow-2xl" style="min-height: 520px; padding: 105px 100px 95px 100px;">
-                    <!-- 改用独立的 img 标签铺满底层，避免 CSS background 兼容性或缓存不刷新的问题 -->
+                <div class="w-full relative flex flex-col items-center text-[#381f0e] drop-shadow-2xl" style="min-height: 520px; padding: 105px 85px 95px 85px;">
                     <img src="https://raw.githubusercontent.com/yazhouliu1018/Shulaigua/main/juanzhou.png" class="absolute inset-0 w-full h-full z-[-1] pointer-events-none" style="object-fit: fill;" alt="卷轴" onerror="this.src='https://cdn.jsdelivr.net/gh/yazhouliu1018/Shulaigua@main/juanzhou.png'">
 
                     <div class="w-11 h-11 mx-auto -mt-4 mb-2 rounded-full bg-[#8c2318] border-2 border-[#d4a656] flex items-center justify-center text-[#f7e2b8] font-calligraphy text-lg shadow hidden">
@@ -177,8 +172,7 @@
                         <span id="scroll-tag" class="inline-block px-2.5 py-0.5 rounded bg-[#7c2316] text-[#f7e2b8] text-xs font-bold mb-1">
                             上上签 · 教大解忧卦
                         </span>
-                        <!-- 缩小卦名字号并强制不换行，保证一行展示 -->
-                        <h2 id="scroll-title" class="text-[15px] font-calligraphy text-[#7c2316] tracking-wide whitespace-nowrap">
+                        <h2 id="scroll-title" class="text-base font-calligraphy text-[#7c2316] whitespace-nowrap">
                             【放下助人 · 好眠卦】
                         </h2>
                     </div>
@@ -191,49 +185,9 @@
                     </div>
                 </div>
 
-                <!-- 移除刷新图标 -->
                 <button id="again-btn" class="mt-2 px-7 py-2.5 rounded-full bg-[#8c2318] hover:bg-[#a62a1d] border-2 border-[#e3b96b] text-[#faebd7] font-bold text-sm tracking-widest shadow-xl transition">
                     再摇一卦
                 </button>
-            </div>
-        </div>
-
-        <!-- ==================== 弹窗B：视频源配置中心 ==================== -->
-        <div id="video-config-modal" class="pointer-events-none opacity-0 absolute inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 transition-opacity duration-300">
-            <div class="scroll-paper w-full max-w-md max-h-[88vh] overflow-y-auto rounded-2xl p-4 text-xs text-[#2d1708]">
-                <div class="flex items-center justify-between border-b border-[#7a5028] pb-2 mb-3">
-                    <h3 class="text-base font-black text-[#7c1d12]">🎬 绑定你的《鼠来卦》视频源</h3>
-                    <button id="close-config-btn" class="px-2.5 py-1 rounded bg-[#4a2a12] text-amber-100 font-bold">关闭</button>
-                </div>
-
-                <div class="bg-[#faeed7] border border-[#9c6b36] rounded-xl p-3 mb-3 space-y-1.5">
-                    <div class="font-bold text-[#7c1d12] flex items-center justify-between">
-                        <span>🔍 仓库扫描 (`yazhouliu1018/Shulaigua`)：</span>
-                        <button id="rescan-github-btn" class="px-2 py-0.5 rounded bg-[#7c1d12] text-amber-100 text-[10px]">重新扫描</button>
-                    </div>
-                    <p id="github-scan-result" class="text-[11px] text-[#4a2a12]">正在检测 v1 shu, v2 shu, v3 shu 文件...</p>
-                </div>
-
-                <div class="bg-[#e8d3ae] border-2 border-[#7c1d12] rounded-xl p-3 mb-3">
-                    <div class="font-black text-[#7c1d12] text-sm mb-1">⚡ 本地导入视频</div>
-                    <div class="grid grid-cols-1 gap-2">
-                        <label class="flex items-center justify-between bg-amber-50/90 px-3 py-1.5 rounded-lg border border-[#8c6239] cursor-pointer">
-                            <span class="font-bold">1️⃣ 状态一视频 (v1 shu)：</span>
-                            <input type="file" id="local-vid-1" accept="video/mp4,video/webm" class="hidden">
-                            <span id="local-vid-1-label" class="px-2 py-0.5 rounded bg-[#7c1d12] text-amber-100 text-[10px]">📂 选择MP4</span>
-                        </label>
-                        <label class="flex items-center justify-between bg-amber-50/90 px-3 py-1.5 rounded-lg border border-[#8c6239] cursor-pointer">
-                            <span class="font-bold">2️⃣ 状态二视频 (v2 shu)：</span>
-                            <input type="file" id="local-vid-2" accept="video/mp4,video/webm" class="hidden">
-                            <span id="local-vid-2-label" class="px-2 py-0.5 rounded bg-[#5c3718] text-amber-100 text-[10px]">📂 选择MP4</span>
-                        </label>
-                        <label class="flex items-center justify-between bg-amber-50/90 px-3 py-1.5 rounded-lg border border-[#8c6239] cursor-pointer">
-                            <span class="font-bold">3️⃣ 状态三视频 (v3 shu)：</span>
-                            <input type="file" id="local-vid-3" accept="video/mp4,video/webm" class="hidden">
-                            <span id="local-vid-3-label" class="px-2 py-0.5 rounded bg-[#5c3718] text-amber-100 text-[10px]">📂 选择MP4</span>
-                        </label>
-                    </div>
-                </div>
             </div>
         </div>
 
@@ -302,7 +256,7 @@
                 tag: "上上签 · 考神附体卦",
                 title: "【蒙图占座 · 丝滑卦】",
                 content: "今日吉星高照，蒙民伟图书馆必有你的专属C位。Groupmate个个大腿，所有Due都能丝滑提交，顺利Pass！",
-                advice: "💡 今日宜：果断点击Submit / 忌：反复纠结"
+                advice: "💡 今日宜：果断Submit / 忌：反复纠结"
             },
             {
                 tag: "大吉 · 桃花人际卦",
@@ -314,7 +268,7 @@
                 tag: "中平 · 强健体魄卦",
                 title: "【甩掉内耗 · 爆汗卦】",
                 content: "在电脑前坐了一天腰酸背痛？立刻去教大体育馆挥洒汗水，把所有的内耗和烦恼都随着卡路里燃烧掉吧！",
-                advice: "💡 今日宜：去Gym房举铁 / 忌：久坐不动"
+                advice: "💡 今日宜：去Gym房 / 忌：久坐不动"
             }
         ];
 
@@ -490,7 +444,6 @@
         }
 
         async function preloadAllThreeVideos(name1, name2, name3) {
-            const loadingScreen = document.getElementById('loading-screen');
             const barFill = document.getElementById('loading-bar-fill');
 
             barFill.style.width = '15%';
@@ -508,7 +461,7 @@
                 preloadSingleVideoSlot('state3', name3).then(r => { updateProgress(); return r; })
             ];
 
-            const results = await Promise.all(tasks);
+            await Promise.all(tasks);
 
             const fallbackUrl = videoSources.state1 || videoSources.state2 || videoSources.state3;
             if (!videoSources.state1) videoSources.state1 = fallbackUrl;
@@ -516,10 +469,16 @@
             if (!videoSources.state3) videoSources.state3 = fallbackUrl;
             videoSources.loaded = true;
 
-            // 加载完成后自动进入游戏，去除多余按钮
+            // ！！！核心修改：加载完成后不自动播放，而是显示“进入”按钮，由用户点击解锁音频 ！！！
             setTimeout(() => {
-                loadingScreen.classList.add('opacity-0', 'pointer-events-none');
-                playVideoForCurrentPhase();
+                document.getElementById('loading-progress-container').classList.add('hidden');
+                const enterBtn = document.getElementById('enter-game-btn');
+                enterBtn.classList.remove('hidden');
+                
+                enterBtn.addEventListener('click', () => {
+                    document.getElementById('loading-screen').classList.add('opacity-0', 'pointer-events-none');
+                    playVideoForCurrentPhase();
+                }, { once: true });
             }, 400);
         }
 
@@ -583,33 +542,26 @@
             ratDialogue.innerHTML = '🐭 <strong>鼠摊主</strong>：“看招！签筒飞上天咯——左右倾斜手机（或滑动屏幕）去接灵符吧！”';
             playVideoForCurrentPhase();
 
-            // 签筒抛出画外后隐藏（1秒）
             setTimeout(() => {
                 if (state.phase !== 'STATE_2_THROW') return;
                 deskCanisterBtn.classList.add('hidden');
-                // 注意：这里先不进入 PLAY 状态，防止玩家接筒提前出现
             }, 1000);
 
-            // 严格控制：v2 shu 视频播放整整 3 秒之后，再同时触发 白幕、卦符、引导
             setTimeout(() => {
                 if (state.phase !== 'STATE_2_THROW') return;
                 
-                // 正式进入可操作的游戏状态
                 state.phase = 'STATE_2_PLAY';
                 
-                // 1. 半透明白幕与计分板出现
                 whiteVeil.classList.remove('opacity-0');
                 hudCounter.classList.remove('hidden');
                 quickResetBtn.classList.remove('hidden');
                 
-                // 2. 摇晃手机引导出现，3秒后自动隐去
                 const tiltGuide = document.getElementById('tilt-guide');
                 tiltGuide.classList.remove('opacity-0');
                 setTimeout(() => {
                     tiltGuide.classList.add('opacity-0');
                 }, 3000);
 
-                // 3. 卦符正式开始掉落
                 state.canSpawn = true;
                 state.lastSpawnTime = performance.now();
                 spawnFallingCharm();
@@ -629,13 +581,13 @@
         function spawnFallingCharm() {
             if (state.phase !== 'STATE_2_PLAY') return;
             const trigram = TRIGRAM_LIST[Math.floor(Math.random() * TRIGRAM_LIST.length)];
-            const isSneaky = Math.random() < 0.83; // 将心机躲闪符的出现概率调整至 83%
+            const isSneaky = Math.random() < 0.83;
 
             state.charms.push({
                 x: (0.18 + Math.random() * 0.64) * state.width,
                 y: -60,
                 vx: 0,
-                vy: isSneaky ? (2.0 + Math.random() * 0.6) : (3.5 + Math.random() * 1.0), // 初始掉落速度微调
+                vy: isSneaky ? (2.0 + Math.random() * 0.6) : (3.5 + Math.random() * 1.0),
                 rotation: (Math.random() - 0.5) * 0.25,
                 vRot: (Math.random() - 0.5) * 0.015,
                 trigram,
@@ -648,7 +600,6 @@
             state.toasts.push({ x, y, text, color, alpha: 1, dy: -1.4 });
         }
 
-        // 接完卦之后先播放完 v3 shu 视频之后再出现卷轴，取消单独加的金签特效
         function enterState3() {
             state.phase = 'STATE_3';
             state.charms = [];
@@ -660,14 +611,12 @@
 
             playVideoForCurrentPhase();
 
-            // 监听 v3 shu 视频播放完毕事件
             bgVideo.onended = () => {
                 if (state.phase === 'STATE_3' && document.getElementById('scroll-modal').classList.contains('opacity-0')) {
                     openScrollModal();
                 }
             };
 
-            // 强制保底机制：严格等待 10 秒钟后弹出卷轴（满足完整播放10秒的需求）
             setTimeout(() => {
                 if (state.phase === 'STATE_3' && document.getElementById('scroll-modal').classList.contains('opacity-0')) {
                     openScrollModal();
@@ -763,23 +712,20 @@
                     const dy = c.y - playerCanisterY;
                     const dist = Math.sqrt(dx * dx + dy * dy);
 
-                    // 修复躲闪逻辑：网页Y轴向下为正，要计算灵符在签筒上方的距离
                     const distYFromTop = playerCanisterY - c.y;
 
-                    // 躲避效果恢复：当符在上方 30~140 像素距离，且横向较近时触发爆发躲闪
                     if (c.isSneaky && !c.hasDodged && distYFromTop > 30 && distYFromTop < 140 && Math.abs(dx) < 65) {
                         c.hasDodged = true;
                         sfx.playSneakyDodge();
-                        const dodgeDir = c.x < w / 2 ? 1 : -1; // 往屏幕中间躲闪，防止飞出画外
-                        c.vx = dodgeDir * (12 + Math.random() * 5); // 恢复第一版的超大横向爆发速度
-                        c.vy = 4.5; // 躲闪后加速往下掉
+                        const dodgeDir = c.x < w / 2 ? 1 : -1;
+                        c.vx = dodgeDir * (12 + Math.random() * 5);
+                        c.vy = 4.5;
                         
                         const dodgeTexts = ["略略略~", "闪身步！", "走位！", "嘿嘿，空了！", "没接住吧~"];
                         const randomText = dodgeTexts[Math.floor(Math.random() * dodgeTexts.length)];
                         addFloatingToast(c.x, c.y - 20, randomText, "#9e2a2b");
                     }
 
-                    // 缩小判定半径（46 -> 32），提高接取要求
                     if (dist < 32) {
                         sfx.playCatchCharm();
                         state.charms.splice(i, 1);
@@ -806,19 +752,18 @@
                     ctx.shadowBlur = 12;
                     ctx.fillStyle = '#f3e2be';
                     ctx.strokeStyle = '#5c381a';
-                    ctx.lineWidth = 2; // 线条微调
+                    ctx.lineWidth = 2;
                     ctx.beginPath();
-                    // 整体尺寸缩小（原本宽60高100 -> 现在宽40高66）
                     ctx.roundRect(-20, -33, 40, 66, 4);
                     ctx.fill();
                     ctx.stroke();
 
                     ctx.fillStyle = '#8c2318';
-                    ctx.font = 'bold 16px "Noto Serif SC", serif'; // 字号缩小
+                    ctx.font = 'bold 16px "Noto Serif SC", serif';
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
                     ctx.fillText(c.trigram.name, 0, -8);
-                    ctx.font = '10px sans-serif'; // 八卦符号缩小
+                    ctx.font = '10px sans-serif';
                     ctx.fillText(c.trigram.symbol, 0, 12);
 
                     ctx.restore();
@@ -828,7 +773,7 @@
             for (let i = state.toasts.length - 1; i >= 0; i--) {
                 const t = state.toasts[i];
                 t.y += t.dy;
-                t.alpha -= 0.008; // 衰减速度减半，让文字停留时间明显变长
+                t.alpha -= 0.008;
                 if (t.alpha <= 0) {
                     state.toasts.splice(i, 1);
                     continue;
@@ -875,16 +820,13 @@
         }
 
         async function scanGithubRepo() {
-            const resultEl = document.getElementById('github-scan-result');
-            resultEl.textContent = "正在检测 GitHub 仓库文件...";
             try {
                 const api = `https://api.github.com/repos/${GH_USER}/${GH_REPO}/contents`;
                 const res = await fetch(api);
-                if (!res.ok) throw new Error("API限制或仓库不存在");
+                if (!res.ok) throw new Error("API limit or repo not found");
                 const list = await res.json();
                 const mp4s = list.filter(item => item.type === 'file' && /\.mp4$/i.test(item.name));
                 if (mp4s.length > 0) {
-                    resultEl.innerHTML = `✅ 检测到 ${mp4s.length} 个视频：` + mp4s.map(m => m.name).join(', ');
                     const findByName = (kw) => {
                         const found = mp4s.find(m => m.name.toLowerCase().includes(kw));
                         return found ? found.name : "";
@@ -894,37 +836,12 @@
                     const n3 = findByName('v3') || DEFAULT_VIDEO_NAMES.state3;
                     preloadAllThreeVideos(n1, n2, n3);
                 } else {
-                    resultEl.textContent = "⚠️ 自动扫描跳过，直接载入默认视频配置...";
                     preloadAllThreeVideos(DEFAULT_VIDEO_NAMES.state1, DEFAULT_VIDEO_NAMES.state2, DEFAULT_VIDEO_NAMES.state3);
                 }
             } catch (e) {
-                resultEl.textContent = "⚠️ 自动扫描跳过，直接载入默认视频配置...";
                 preloadAllThreeVideos(DEFAULT_VIDEO_NAMES.state1, DEFAULT_VIDEO_NAMES.state2, DEFAULT_VIDEO_NAMES.state3);
             }
         }
-
-        document.getElementById('rescan-github-btn').addEventListener('click', scanGithubRepo);
-
-        function setupLocalUpload(inputId, labelId, slotKey) {
-            document.getElementById(inputId).addEventListener('change', (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-                const blobUrl = URL.createObjectURL(file);
-                videoSources[slotKey] = blobUrl;
-                preloadedVideos[slotKey].src = blobUrl;
-                document.getElementById(labelId).textContent = "✅ 已加载";
-                document.getElementById(labelId).className = "px-2 py-0.5 rounded bg-emerald-700 text-amber-100 text-[10px]";
-                
-                if (videoSources.state1 && videoSources.state2 && videoSources.state3) {
-                    videoSources.loaded = true;
-                    document.getElementById('loading-screen').classList.add('opacity-0', 'pointer-events-none');
-                    playVideoForCurrentPhase();
-                }
-            });
-        }
-        setupLocalUpload('local-vid-1', 'local-vid-1-label', 'state1');
-        setupLocalUpload('local-vid-2', 'local-vid-2-label', 'state2');
-        setupLocalUpload('local-vid-3', 'local-vid-3-label', 'state3');
 
         window.addEventListener('load', () => {
             resizeStage();
